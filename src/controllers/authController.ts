@@ -1,4 +1,4 @@
-import { signupSchema } from "../schemas/authControllerSchema.js";
+import { signupSchema, loginSchema } from "../schemas/authControllerSchema.js";
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -25,7 +25,7 @@ export const signupUser = async (req:Request, res:Response) => {
 
 export const loginUser = async (req: Request, res: Response) => {
   try {
-    const { email, password } = signupSchema.parse(req.body);
+    const { email, password } = loginSchema.parse(req.body);
 
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
