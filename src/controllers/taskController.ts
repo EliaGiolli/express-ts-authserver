@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { TaskService } from "../services/taskService.js";
+import { createTaskSchema, updateTaskSchema } from "../schemas/taskControllerSchema.js";
+import { ITask } from "../models/taskModel.js";
 
 const taskService = new TaskService();
 
@@ -20,39 +22,30 @@ export const getTask = async (req: Request, res: Response) => {
 
 // getAllTasks
 export const getAllTasks = async (req:Request, res: Response) => {
-    try{
+    try {
         const tasks = await taskService.getTasks();
-
-        if(tasks){
-            return res.status(200).json(tasks);
-        }else{
-            return res.status(500).json( { error: 'No tasks found'});
-        }
-    }catch(err){
+        return res.status(200).json(tasks); // Always return array, even if empty
+    } catch (err) {
         return res.status(500).json({ error: 'Server error' });
     }
 }
 
 // createTask
 export const createTask = async (req:Request, res:Response) => {
-    try{
-        const { 
-        nameTask, 
-        description, 
-        tag, 
-        completed, 
-        dueDate
-    } = req.body;
-
-    const newTask = await taskService.createNewTask(nameTask, description, tag, completed, dueDate);
-
-    if(newTask){
-        return res.status(200).json(newTask);
-    }else{
-        return res.status(500).json({ error: 'Unable to create the task' });
-    }
-    }catch(err){
-        res.status(500).json({ message: 'Server error'});
+    try {
+        
+        const { nameTask, description, tag, completed, dueDate } = createTaskSchema.parse(req.body);
+        
+        if (!nameTask || !description || !tag || typeof completed !== "boolean" || !dueDate) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+        
+        const newTask = await taskService.createNewTask(
+            nameTask, description, tag, completed, new Date(dueDate)
+        );
+        return res.status(201).json(newTask);
+    } catch (err) {
+        return res.status(500).json({ message: 'Server error' });
     }
 }
 
@@ -75,12 +68,29 @@ export const removeTask = async (req: Request, res: Response) => {
 export const updateTask = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
-        const updatedTask = await taskService.updateTask(id, updateData);
-        if (updatedTask) {
-            return res.status(200).json(updatedTask);
+        const updateData = updateTaskSchema.parse(req.body);
+
+        // Convert dueDate to Date if present and is a string
+        if (updateData.dueDate && typeof updateData.dueDate === "string") {
+            // Use a temporary variable to avoid type conflict
+            const { dueDate, ...rest } = updateData;
+            const updateDataWithDate: Partial<ITask> = {
+                ...rest,
+                dueDate: new Date(dueDate)
+            };
+            const updatedTask = await taskService.updateTask(id, updateDataWithDate);
+            if (updatedTask) {
+                return res.status(200).json(updatedTask);
+            } else {
+                return res.status(404).json({ error: 'Task not found' });
+            }
         } else {
-            return res.status(404).json({ error: 'Task not found' });
+            const updatedTask = await taskService.updateTask(id, updateData as Partial<ITask>);
+            if (updatedTask) {
+                return res.status(200).json(updatedTask);
+            } else {
+                return res.status(404).json({ error: 'Task not found' });
+            }
         }
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
