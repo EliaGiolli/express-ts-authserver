@@ -1,19 +1,21 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface ITask extends Document {
-    _id: string,
     nameTask: string,
-    description: string,
-    tag: string,
-    createdAt: Date
+    description?: string,
+    tag?: string,
+    completed: boolean, 
+    dueDate: Date
 }
 
 const taskSchema = new Schema<ITask>({
-    _id: { type:String, required:true, unique: true },
     nameTask: { type: String, required: true},
     description: { type: String, required: false },
     tag: { type: String, required: false },
-    createdAt: { type: Date, required: true, unique: true}
-})
+    completed: { type: Boolean, required: true },
+    dueDate: { type: Date, required: true }
+},
+{ timestamps: true } // the timestamps automatically manage createdAt and updatedAt fields
+)
 
 export const Task = mongoose.model<ITask>("Task", taskSchema);
