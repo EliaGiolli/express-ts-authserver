@@ -2,7 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import mongoose from "mongoose";
-import authRouter from "./routes/authRoute.js";
+import { authRouter } from "./routes/authRoute.js";
+import { taskRouter } from "./routes/taskRoute.js";
 import { authMiddleware, AuthenticatedRequest } from "./middlewares/auth.js";
 
 dotenv.config();
@@ -18,6 +19,7 @@ mongoose.connect(process.env.MONGO_URI!)
 
 // Public routes 
 app.use("/auth", authRouter);
+app.use("/tasks", taskRouter);
 
 // Protected route
 app.get("/protected", authMiddleware, (req: AuthenticatedRequest, res) => {
